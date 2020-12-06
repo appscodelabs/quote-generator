@@ -3,14 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/docs/v1"
 )
 
@@ -86,7 +84,7 @@ func main() {
 
 	// Prints the title of the requested doc:
 	// https://docs.google.com/document/d/195j9eDD3ccgjQRttHhJPymLJUCOUjs-jmwTrekvdjFE/edit
-	docId := "195j9eDD3ccgjQRttHhJPymLJUCOUjs-jmwTrekvdjFE"
+	docId := "1sVzl3bKYDqdCaefh9lP6hlqgkhX7LNgCCMVl80EwHIk"
 	doc, err := srv.Documents.Get(docId).Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve data from document: %v", err)
