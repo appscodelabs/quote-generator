@@ -3,6 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -65,19 +68,31 @@ func saveToken(path string, token *oauth2.Token) {
 }
 
 func main() {
-	//b, err := ioutil.ReadFile("credentials.json")
-	//if err != nil {
-	//	log.Fatalf("Unable to read client secret file: %v", err)
-	//}
-	//
-	//// If modifying these scopes, delete your previously saved token.json.
-	//config, err := google.ConfigFromJSON(b, "https://www.googleapis.com/auth/documents.readonly")
-	//if err != nil {
-	//	log.Fatalf("Unable to parse client secret file to config: %v", err)
-	//}
-	//client := getClient(config)
+	b, err := ioutil.ReadFile("credentials.json")
+	if err != nil {
+		log.Fatalf("Unable to read client secret file: %v", err)
+	}
 
-	srv, err := docs.NewService(context.TODO())
+	// If modifying these scopes, delete your previously saved token.json.
+	config, err := google.ConfigFromJSON(b,
+		"https://www.googleapis.com/auth/documents",
+		"https://www.googleapis.com/auth/documents.readonly",
+		"https://www.googleapis.com/auth/drive",
+		"https://www.googleapis.com/auth/drive.file",
+		"https://www.googleapis.com/auth/drive.readonly",
+	)
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+	}
+	client := getClient(config)
+
+	srv, err := docs.NewService(context.TODO(), option.WithHTTPClient(client), option.WithScopes(
+		"https://www.googleapis.com/auth/documents",
+		"https://www.googleapis.com/auth/documents.readonly",
+		"https://www.googleapis.com/auth/drive",
+		"https://www.googleapis.com/auth/drive.file",
+		"https://www.googleapis.com/auth/drive.readonly",
+	))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Docs client: %v", err)
 	}
@@ -90,4 +105,21 @@ func main() {
 		log.Fatalf("Unable to retrieve data from document: %v", err)
 	}
 	fmt.Printf("The title of the doc is: %s\n", doc.Title)
+
+	err = run(srv)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func run(srv *docs.Service) error {
+	doc := &docs.Document{}
+	doc.Title = "XYZ"
+	doc, err := srv.Documents.Create(doc).Do()
+	if err != nil {
+		return err
+	}
+	fmt.Println(">>>>>>>>>>>>>", doc.Title)
+	fmt.Println(">>>>>>>>>>>>>", doc.DocumentId)
+	return nil
 }
