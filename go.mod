@@ -1,4 +1,4 @@
-module github.com/tamalsaha/google-doc-demo
+module github.com/appscodelabs/quote-generator
 
 go 1.15
 
