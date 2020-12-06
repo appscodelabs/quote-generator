@@ -1,11 +1,25 @@
+/*
+Copyright AppsCode Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/option"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,14 +30,16 @@ import (
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 )
 
 var businessFolderId = "1GBmNGzO54HqjlWXrSN7Ds9zu_qJEx4gW"
 
 var docIds = map[string]string{
-	"stash": "1Y2z7UZIIuvF3Twka6tXoovkbxyxXXz4qLnr9W43BIFs",
+	"stash":     "1Y2z7UZIIuvF3Twka6tXoovkbxyxXXz4qLnr9W43BIFs",
 	"kubedb-30": "1n8zRoI5qjBaqa5hrogAey8OFd8-q7nCE9ysxwullb0g",
 	"kubedb-40": "1s5751cd1SWZAy824njvTz2-iSC4V7NXRoFoCmZfoIcQ",
 	"kubedb-45": "1VN3C_fDdUG_-zgFwvPkASVYzVmVr9E2Scv1Z2uqBRrY",
@@ -112,15 +128,6 @@ func main() {
 		log.Fatalf("Unable to retrieve Docs client: %v", err)
 	}
 
-	// Prints the title of the requested doc:
-	// https://docs.google.com/document/d/195j9eDD3ccgjQRttHhJPymLJUCOUjs-jmwTrekvdjFE/edit
-	docId := "1sVzl3bKYDqdCaefh9lP6hlqgkhX7LNgCCMVl80EwHIk"
-	doc, err := srvDoc.Documents.Get(docId).Do()
-	if err != nil {
-		log.Fatalf("Unable to retrieve data from document: %v", err)
-	}
-	fmt.Printf("The title of the doc is: %s\n", doc.Title)
-
 	err = run(srvDoc, srvDrive)
 	if err != nil {
 		panic(err)
@@ -172,22 +179,41 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 		ExpiryDate:  time.Now().Add(30 * 24 * time.Hour),
 	}
 
-	// https://developers.google.com/drive/api/v3/folder#java
-	folderMetadata := &drive.File{
-		Name:     Domain(info.Email),
-		MimeType: "application/vnd.google-apps.folder",
-		Parents:  []string{businessFolderId},
-	}
-	folder, err := srvDrive.Files.Create(folderMetadata).Fields("id").Do()
+	var domainFolderId string
+
+	// https://developers.google.com/drive/api/v3/search-files
+	q := fmt.Sprintf("name = '%s' and mimeType = 'application/vnd.google-apps.folder' and '%s' in parents", Domain(info.Email), businessFolderId)
+	files, err := srvDrive.Files.List().Q(q).Spaces("drive").Do()
 	if err != nil {
 		return err
 	}
-	fmt.Println(folder.Id)
+	if len(files.Files) > 0 {
+		fmt.Println("----------------")
+		for _, f := range files.Files {
+			fmt.Println(f.Id, f.Name)
+		}
+		fmt.Println("----------------")
+		domainFolderId = files.Files[0].Id
+	} else {
+		// https://developers.google.com/drive/api/v3/folder#java
+		folderMetadata := &drive.File{
+			Name:     Domain(info.Email),
+			MimeType: "application/vnd.google-apps.folder",
+			Parents:  []string{businessFolderId},
+		}
+		folder, err := srvDrive.Files.Create(folderMetadata).Fields("id").Do()
+		if err != nil {
+			return err
+		}
+		domainFolderId = folder.Id
+	}
+
+	fmt.Println(domainFolderId)
 
 	// https://developers.google.com/docs/api/how-tos/documents#copying_an_existing_document
 	copyMetadata := &drive.File{
 		Name:    fmt.Sprintf("%s QUOTE #%s", info.Company, info.Quote),
-		Parents: []string{folder.Id},
+		Parents: []string{domainFolderId},
 	}
 	copyFile, err := srvDrive.Files.Copy(docIds["kubedb-45"], copyMetadata).Fields("id", "parents").Do()
 	if err != nil {
@@ -215,28 +241,6 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 	if err != nil {
 		return err
 	}
-
-	//doc := &docs.Document{}
-	//doc.Title = "XYZ"
-	//doc, err := srvDoc.Documents.Create(doc).Do()
-	//if err != nil {
-	//	return err
-	//}
-
-	/*
-		{{quote}}
-
-		{{name}}
-		{{designation}}
-		{{company}}
-		{{phone}}
-		{{email}}
-		{{website}}
-
-		{{prep-date}}
-		{{expiry-date}}
-	*/
-
 	fmt.Println(">>>>>>>>>>>>>", doc.DocumentId)
 
 	resp, err := srvDrive.Files.Export(doc.DocumentId, "application/pdf").Download()
