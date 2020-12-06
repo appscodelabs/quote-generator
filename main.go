@@ -92,40 +92,22 @@ func main() {
 		"https://www.googleapis.com/auth/documents",
 		"https://www.googleapis.com/auth/documents.readonly",
 		"https://www.googleapis.com/auth/drive",
-		"https://www.googleapis.com/auth/drive.appdata",
 		"https://www.googleapis.com/auth/drive.file",
 		"https://www.googleapis.com/auth/drive.metadata",
 		"https://www.googleapis.com/auth/drive.metadata.readonly",
-		"https://www.googleapis.com/auth/drive.photos.readonly",
 		"https://www.googleapis.com/auth/drive.readonly",
-		"https://www.googleapis.com/auth/drive.scripts",
 	)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
 	client := getClient(config)
 
-	srvDrive, err := drive.NewService(context.TODO(), option.WithHTTPClient(client), option.WithScopes(
-		"https://www.googleapis.com/auth/drive",
-		"https://www.googleapis.com/auth/drive.appdata",
-		"https://www.googleapis.com/auth/drive.file",
-		"https://www.googleapis.com/auth/drive.metadata",
-		"https://www.googleapis.com/auth/drive.metadata.readonly",
-		"https://www.googleapis.com/auth/drive.photos.readonly",
-		"https://www.googleapis.com/auth/drive.readonly",
-		"https://www.googleapis.com/auth/drive.scripts",
-	))
+	srvDrive, err := drive.NewService(context.TODO(), option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Docs client: %v", err)
 	}
 
-	srvDoc, err := docs.NewService(context.TODO(), option.WithHTTPClient(client), option.WithScopes(
-		"https://www.googleapis.com/auth/documents",
-		"https://www.googleapis.com/auth/documents.readonly",
-		"https://www.googleapis.com/auth/drive",
-		"https://www.googleapis.com/auth/drive.file",
-		"https://www.googleapis.com/auth/drive.readonly",
-	))
+	srvDoc, err := docs.NewService(context.TODO(), option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Docs client: %v", err)
 	}
@@ -207,7 +189,7 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 		Name:    fmt.Sprintf("%s QUOTE #%s", info.Company, info.Quote),
 		Parents: []string{folder.Id},
 	}
-	copyFile, err := srvDrive.Files.Copy(docIds["stash"], copyMetadata).Fields("id", "parents").Do()
+	copyFile, err := srvDrive.Files.Copy(docIds["kubedb-45"], copyMetadata).Fields("id", "parents").Do()
 	if err != nil {
 		return err
 	}
