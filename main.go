@@ -88,7 +88,7 @@ func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 		log.Fatalf("Unable to read authorization code: %v", err)
 	}
 
-	tok, err := config.Exchange(oauth2.NoContext, authCode)
+	tok, err := config.Exchange(context.TODO(), authCode)
 	if err != nil {
 		log.Fatalf("Unable to retrieve token from web: %v", err)
 	}
@@ -98,7 +98,9 @@ func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 // Retrieves a token from a local file.
 func tokenFromFile(file string) (*oauth2.Token, error) {
 	f, err := os.Open(file)
-	defer f.Close()
+	defer func() {
+		Must(f.Close())
+	}()
 	if err != nil {
 		return nil, err
 	}
@@ -111,11 +113,13 @@ func tokenFromFile(file string) (*oauth2.Token, error) {
 func saveToken(path string, token *oauth2.Token) {
 	fmt.Printf("Saving credential file to: %s\n", path)
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	defer f.Close()
+	defer func() {
+		Must(f.Close())
+	}()
 	if err != nil {
 		log.Fatalf("Unable to cache OAuth token: %v", err)
 	}
-	json.NewEncoder(f).Encode(token)
+	Must(json.NewEncoder(f).Encode(token))
 }
 
 func main() {
@@ -195,6 +199,12 @@ func main() {
 func Domain(email string) string {
 	parts := strings.Split(email, "@")
 	return parts[len(parts)-1]
+}
+
+func Must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
