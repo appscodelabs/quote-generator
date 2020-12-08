@@ -4,6 +4,8 @@ go 1.15
 
 require (
 	cloud.google.com/go v0.73.0 // indirect
+	github.com/gobuffalo/flect v0.2.2
+	github.com/spf13/pflag v1.0.5
 	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb
 	golang.org/x/oauth2 v0.0.0-20201203001011-0b49973bad19
 	golang.org/x/sys v0.0.0-20201204225414-ed752295db88 // indirect

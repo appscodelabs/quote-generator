@@ -25,9 +25,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/gobuffalo/flect"
+	flag "github.com/spf13/pflag"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -36,13 +39,30 @@ import (
 	"google.golang.org/api/option"
 )
 
-var businessFolderId = "1GBmNGzO54HqjlWXrSN7Ds9zu_qJEx4gW"
+var businessFolderId = "1MW9ElMPDupVRohXqit-j6Wls-Cvq7DmN"
 
-var docIds = map[string]string{
+var templateIds = map[string]string{
 	"stash":     "1Y2z7UZIIuvF3Twka6tXoovkbxyxXXz4qLnr9W43BIFs",
 	"kubedb-30": "1n8zRoI5qjBaqa5hrogAey8OFd8-q7nCE9ysxwullb0g",
 	"kubedb-40": "1s5751cd1SWZAy824njvTz2-iSC4V7NXRoFoCmZfoIcQ",
 	"kubedb-45": "1VN3C_fDdUG_-zgFwvPkASVYzVmVr9E2Scv1Z2uqBRrY",
+}
+
+var (
+	parentFolderId   string
+	templateDocId    string
+	outDir           string
+	replacementInput map[string]string
+	replacements     map[string]string
+	email            string
+	quote            string
+)
+
+func init() {
+	flag.StringVar(&parentFolderId, "parent-folder-id", businessFolderId, "Parent folder id where generated docs will be stored under a folder with matching email domain")
+	flag.StringVar(&templateDocId, "template-doc-id", "", "Template document id")
+	flag.StringVar(&outDir, "out-dir", "/home/tamal/AppsCode/quotes", "Path to directory where output files are stored")
+	flag.StringToStringVar(&replacementInput, "data", nil, "key-value pairs for text replacement")
 }
 
 // Retrieves a token, saves the token, then returns the generated client.
@@ -98,6 +118,43 @@ func saveToken(path string, token *oauth2.Token) {
 }
 
 func main() {
+	flag.Parse()
+
+	if parentFolderId == "" {
+		panic("missing parent folder id")
+	}
+	if templateDocId == "" {
+		panic("missing template doc id")
+	}
+	if id, ok := templateIds[templateDocId]; ok {
+		templateDocId = id
+	}
+
+	replacements = map[string]string{}
+	for k, v := range replacementInput {
+		if strings.HasPrefix(k, "{{") && strings.HasSuffix(k, "}}") {
+			replacements[k] = v
+			continue
+		}
+		k = strings.Trim(k, "{}")
+		k = flect.Dasherize(k)
+		replacements[fmt.Sprintf("{{%s}}", k)] = v
+	}
+	if v, ok := replacements["{{email}}"]; !ok {
+		panic("missing email")
+	} else {
+		email = v
+	}
+	if v, ok := replacements["{{quote}}"]; !ok {
+		panic("missing quote")
+	} else {
+		quote = v
+	}
+	replacements["{{website}}"] = Domain(email)
+	now := time.Now()
+	replacements["{{prep-date}}"] = now.Format("Jan 2, 2006")
+	replacements["{{expiry-date}}"] = now.Add(30 * 24 * time.Hour).Format("Jan 2, 2006")
+
 	b, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)
@@ -134,72 +191,28 @@ func main() {
 	}
 }
 
-type Info struct {
-	Quote string
-
-	Name        string
-	Designation string
-	Company     string
-	Phone       string
-	Email       string
-
-	PrepDate   time.Time
-	ExpiryDate time.Time
-}
-
-func (i Info) Date() map[string]string {
-	data := map[string]string{}
-
-	data["{{quote}}"] = i.Quote
-	data["{{name}}"] = i.Name
-	data["{{designation}}"] = i.Designation
-	data["{{company}}"] = i.Company
-	data["{{phone}}"] = i.Phone
-	data["{{email}}"] = i.Email
-	data["{{website}}"] = Domain(i.Email)
-	data["{{prep-date}}"] = i.PrepDate.Format("Jan 2, 2006")
-	data["{{expiry-date}}"] = i.ExpiryDate.Format("Jan 2, 2006")
-	return data
-}
-
 func Domain(email string) string {
 	parts := strings.Split(email, "@")
 	return parts[len(parts)-1]
 }
 
 func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
-	info := Info{
-		Quote:       "AC2012001",
-		Name:        "Tamal Saha",
-		Designation: "CEO",
-		Company:     "AppsCode Inc.",
-		Phone:       "+1(434)284-0668",
-		Email:       "tamal@appscode.com",
-		PrepDate:    time.Now(),
-		ExpiryDate:  time.Now().Add(30 * 24 * time.Hour),
-	}
-
 	var domainFolderId string
 
 	// https://developers.google.com/drive/api/v3/search-files
-	q := fmt.Sprintf("name = '%s' and mimeType = 'application/vnd.google-apps.folder' and '%s' in parents", Domain(info.Email), businessFolderId)
+	q := fmt.Sprintf("name = '%s' and mimeType = 'application/vnd.google-apps.folder' and '%s' in parents", Domain(email), parentFolderId)
 	files, err := srvDrive.Files.List().Q(q).Spaces("drive").Do()
 	if err != nil {
 		return err
 	}
 	if len(files.Files) > 0 {
-		fmt.Println("----------------")
-		for _, f := range files.Files {
-			fmt.Println(f.Id, f.Name)
-		}
-		fmt.Println("----------------")
 		domainFolderId = files.Files[0].Id
 	} else {
 		// https://developers.google.com/drive/api/v3/folder#java
 		folderMetadata := &drive.File{
-			Name:     Domain(info.Email),
+			Name:     Domain(email),
 			MimeType: "application/vnd.google-apps.folder",
-			Parents:  []string{businessFolderId},
+			Parents:  []string{parentFolderId},
 		}
 		folder, err := srvDrive.Files.Create(folderMetadata).Fields("id").Do()
 		if err != nil {
@@ -207,26 +220,25 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 		}
 		domainFolderId = folder.Id
 	}
-
-	fmt.Println(domainFolderId)
+	fmt.Println("Using domain folder id:", domainFolderId)
 
 	// https://developers.google.com/docs/api/how-tos/documents#copying_an_existing_document
+	docName := fmt.Sprintf("%s QUOTE #%s", Domain(email), quote)
 	copyMetadata := &drive.File{
-		Name:    fmt.Sprintf("%s QUOTE #%s", info.Company, info.Quote),
+		Name:    docName,
 		Parents: []string{domainFolderId},
 	}
-	copyFile, err := srvDrive.Files.Copy(docIds["kubedb-45"], copyMetadata).Fields("id", "parents").Do()
+	copyFile, err := srvDrive.Files.Copy(templateDocId, copyMetadata).Fields("id", "parents").Do()
 	if err != nil {
 		return err
 	}
-	fmt.Println(copyFile.Id)
+	fmt.Println("doc id:", copyFile.Id)
 
 	// https://developers.google.com/docs/api/how-tos/merge
-	fields := info.Date()
 	req := &docs.BatchUpdateDocumentRequest{
-		Requests: make([]*docs.Request, 0, len(fields)),
+		Requests: make([]*docs.Request, 0, len(replacements)),
 	}
-	for k, v := range fields {
+	for k, v := range replacements {
 		req.Requests = append(req.Requests, &docs.Request{
 			ReplaceAllText: &docs.ReplaceAllTextRequest{
 				ContainsText: &docs.SubstringMatchCriteria{
@@ -241,7 +253,6 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(">>>>>>>>>>>>>", doc.DocumentId)
 
 	resp, err := srvDrive.Files.Export(doc.DocumentId, "application/pdf").Download()
 	if err != nil {
@@ -249,8 +260,17 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 	}
 	defer resp.Body.Close()
 	var buf bytes.Buffer
-	io.Copy(&buf, resp.Body)
-	err = ioutil.WriteFile("/home/tamal/Downloads/1a/test-quote.pdf", buf.Bytes(), 0644)
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(filepath.Join(outDir, Domain(email)), 0755)
+	if err != nil {
+		return err
+	}
+	filename := filepath.Join(outDir, Domain(email), docName+".pdf")
+	fmt.Println("writing file:", filename)
+	err = ioutil.WriteFile(filename, buf.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
