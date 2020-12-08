@@ -34,6 +34,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	. "gomodules.xyz/email-providers"
 	"gomodules.xyz/homedir"
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/drive/v3"
@@ -155,7 +156,11 @@ func main() {
 	} else {
 		quote = v
 	}
-	replacements["{{website}}"] = Domain(email)
+	if IsPublicEmail(email) {
+		replacements["{{website}}"] = ""
+	} else {
+		replacements["{{website}}"] = Domain(email)
+	}
 	now := time.Now()
 	replacements["{{prep-date}}"] = now.Format("Jan 2, 2006")
 	replacements["{{expiry-date}}"] = now.Add(30 * 24 * time.Hour).Format("Jan 2, 2006")
@@ -196,7 +201,10 @@ func main() {
 	}
 }
 
-func Domain(email string) string {
+func FolderName(email string) string {
+	if IsPublicEmail(email) {
+		return email
+	}
 	parts := strings.Split(email, "@")
 	return parts[len(parts)-1]
 }
@@ -211,7 +219,7 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 	var domainFolderId string
 
 	// https://developers.google.com/drive/api/v3/search-files
-	q := fmt.Sprintf("name = '%s' and mimeType = 'application/vnd.google-apps.folder' and '%s' in parents", Domain(email), parentFolderId)
+	q := fmt.Sprintf("name = '%s' and mimeType = 'application/vnd.google-apps.folder' and '%s' in parents", FolderName(email), parentFolderId)
 	files, err := srvDrive.Files.List().Q(q).Spaces("drive").Do()
 	if err != nil {
 		return err
@@ -221,7 +229,7 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 	} else {
 		// https://developers.google.com/drive/api/v3/folder#java
 		folderMetadata := &drive.File{
-			Name:     Domain(email),
+			Name:     FolderName(email),
 			MimeType: "application/vnd.google-apps.folder",
 			Parents:  []string{parentFolderId},
 		}
@@ -234,7 +242,7 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 	fmt.Println("Using domain folder id:", domainFolderId)
 
 	// https://developers.google.com/docs/api/how-tos/documents#copying_an_existing_document
-	docName := fmt.Sprintf("%s QUOTE #%s", Domain(email), quote)
+	docName := fmt.Sprintf("%s QUOTE #%s", FolderName(email), quote)
 	copyMetadata := &drive.File{
 		Name:    docName,
 		Parents: []string{domainFolderId},
@@ -275,11 +283,11 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(filepath.Join(outDir, Domain(email)), 0755)
+	filename := filepath.Join(outDir, FolderName(email), docName+".pdf")
+	err = os.MkdirAll(filepath.Dir(filename), 0755)
 	if err != nil {
 		return err
 	}
-	filename := filepath.Join(outDir, Domain(email), docName+".pdf")
 	fmt.Println("writing file:", filename)
 	err = ioutil.WriteFile(filename, buf.Bytes(), 0644)
 	if err != nil {

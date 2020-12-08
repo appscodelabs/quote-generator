@@ -322,6 +322,8 @@ golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8T
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 h1:go1bK/D/BFZV2I8cIQd1NKEZ+0owSTG1fDTci4IqFcE=
 golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
+gomodules.xyz/email-providers v0.1.2 h1:ZHPfQEglZTIAFlXHQ3svbzfSvDnyFptjr3u2HvJx4LY=
+gomodules.xyz/email-providers v0.1.2/go.mod h1:EqvSNJ9PZ2oEdgmYOiw5YhMoUwJaKQZGanirI77rCxA=
 gomodules.xyz/homedir v0.0.0-20201104190528-bcd4d5d94b84 h1:RH11GBm37fGstaCcoFB5KtcUijofDS0yxcdkCS6vx/A=
 gomodules.xyz/homedir v0.0.0-20201104190528-bcd4d5d94b84/go.mod h1:rNt5O0KsgdJjAD/UXuxhO2N3b5TegqEk1T8HG9eraH4=
 google.golang.org/api v0.4.0/go.mod h1:8k5glujaEP+g9n7WNsDg8QP6cUVNI86fCNMcbazEtwE=
