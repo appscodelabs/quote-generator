@@ -60,6 +60,9 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
+# gomodules.xyz/homedir v0.0.0-20201104190528-bcd4d5d94b84
+## explicit
+gomodules.xyz/homedir
 # google.golang.org/api v0.36.0
 ## explicit
 google.golang.org/api/docs/v1
