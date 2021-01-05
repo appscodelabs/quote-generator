@@ -35,7 +35,6 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	. "gomodules.xyz/email-providers"
-	"gomodules.xyz/homedir"
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
@@ -63,7 +62,7 @@ var (
 func init() {
 	flag.StringVar(&parentFolderId, "parent-folder-id", businessFolderId, "Parent folder id where generated docs will be stored under a folder with matching email domain")
 	flag.StringVar(&templateDocId, "template-doc-id", "", "Template document id")
-	flag.StringVar(&outDir, "out-dir", filepath.Join(homedir.HomeDir(), "AppsCode", "quotes"), "Path to directory where output files are stored")
+	flag.StringVar(&outDir, "out-dir", filepath.Join("/personal", "AppsCode", "quotes"), "Path to directory where output files are stored")
 	flag.StringToStringVar(&replacementInput, "data", nil, "key-value pairs for text replacement")
 }
 
