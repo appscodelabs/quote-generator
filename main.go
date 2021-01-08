@@ -51,13 +51,14 @@ var templateIds = map[string]string{
 }
 
 var (
-	parentFolderId   string
-	templateDocId    string
-	outDir           string
-	replacementInput map[string]string
-	replacements     map[string]string
-	email            string
-	quote            string
+	parentFolderId     string
+	templateDocId      string
+	outDir             string
+	replacementInput   map[string]string
+	replacements       map[string]string
+	email              string
+	quote              string
+	quoteSpreadsheetId = "1evwv2ON94R38M-Lkrw8b6dpVSkRYHUWsNOuI7X0_-zA"
 )
 
 func init() {
@@ -65,6 +66,7 @@ func init() {
 	flag.StringVar(&templateDocId, "template-doc-id", "", "Template document id")
 	flag.StringVar(&outDir, "out-dir", filepath.Join("/personal", "AppsCode", "quotes"), "Path to directory where output files are stored")
 	flag.StringToStringVar(&replacementInput, "data", nil, "key-value pairs for text replacement")
+	flag.StringVar(&quoteSpreadsheetId, "spreadsheet-id", quoteSpreadsheetId, "Google Spreadsheet Id used to store quotation log")
 }
 
 // Retrieves a token, saves the token, then returns the generated client.
@@ -151,11 +153,6 @@ func main() {
 	} else {
 		email = v
 	}
-	if v, ok := replacements["{{quote}}"]; !ok {
-		panic("missing quote")
-	} else {
-		quote = v
-	}
 	if IsPublicEmail(email) {
 		replacements["{{website}}"] = ""
 	} else {
@@ -194,6 +191,8 @@ func main() {
 		"https://www.googleapis.com/auth/drive.metadata",
 		"https://www.googleapis.com/auth/drive.metadata.readonly",
 		"https://www.googleapis.com/auth/drive.readonly",
+		"https://www.googleapis.com/auth/spreadsheets",
+		"https://www.googleapis.com/auth/spreadsheets.readonly",
 	)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
@@ -209,6 +208,38 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to retrieve Docs client: %v", err)
 	}
+
+	srvSheet, err := NewSpreadsheet(quoteSpreadsheetId, option.WithHTTPClient(client))
+	if err != nil {
+		log.Fatalf("Unable to retrieve Sheets client: %v", err)
+	}
+	quote, err = srvSheet.Append([]string{
+		"Quotation #",
+		"Name",
+		"Designation",
+		"Email",
+		"Telephone",
+		"Company",
+		"Website",
+		"Country",
+		"Preparation Date",
+		"Expiration Date",
+	}, []string{
+		"AC_DETECT_QUOTE",
+		replacements["{{name}}"],
+		replacements["{{designation}}"],
+		replacements["{{email}}"],
+		replacements["{{tel}}"],
+		replacements["{{company}}"],
+		replacements["{{website}}"],
+		replacements["{{country}}"],
+		replacements["{{prep-date}}"],
+		replacements["{{expiry-date}}"],
+	})
+	if err != nil {
+		log.Fatalf("Unable to append quotation: %v", err)
+	}
+	replacements["{{quote}}"] = quote
 
 	err = run(srvDoc, srvDrive)
 	if err != nil {
