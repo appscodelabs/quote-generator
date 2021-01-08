@@ -272,7 +272,7 @@ func (si *Spreadsheet) Append(headers, data []string) (string, error) {
 	}
 	data[0] = quote
 
-	return "", si.appendRowData(data, false)
+	return quote, si.appendRowData(data, false)
 }
 
 func (si *Spreadsheet) findEmptyCell() (int64, error) {
