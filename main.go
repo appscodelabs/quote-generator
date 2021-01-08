@@ -44,7 +44,8 @@ import (
 var businessFolderId = "1MW9ElMPDupVRohXqit-j6Wls-Cvq7DmN"
 
 var templateIds = map[string]string{
-	"stash":     "1Y2z7UZIIuvF3Twka6tXoovkbxyxXXz4qLnr9W43BIFs",
+	"stash-50":  "1EXMmcztXGb-EOrebHCrPrhFwQuRB0RpTl0UVeMtcMNk",
+	"stash-100": "1Y2z7UZIIuvF3Twka6tXoovkbxyxXXz4qLnr9W43BIFs",
 	"kubedb-30": "1n8zRoI5qjBaqa5hrogAey8OFd8-q7nCE9ysxwullb0g",
 	"kubedb-40": "1s5751cd1SWZAy824njvTz2-iSC4V7NXRoFoCmZfoIcQ",
 	"kubedb-45": "1VN3C_fDdUG_-zgFwvPkASVYzVmVr9E2Scv1Z2uqBRrY",
@@ -222,6 +223,7 @@ func main() {
 		"Company",
 		"Website",
 		"Country",
+		"Pricing Template",
 		"Preparation Date",
 		"Expiration Date",
 	}, []string{
@@ -233,6 +235,7 @@ func main() {
 		replacements["{{company}}"],
 		replacements["{{website}}"],
 		replacements["{{country}}"],
+		templateDocId,
 		replacements["{{prep-date}}"],
 		replacements["{{expiry-date}}"],
 	})
