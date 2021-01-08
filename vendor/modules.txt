@@ -1,6 +1,9 @@
 # cloud.google.com/go v0.73.0
 ## explicit
 cloud.google.com/go/compute/metadata
+# github.com/davegardnerisme/phonegeocode v0.0.0-20160120101024-a49b977f8889
+## explicit
+github.com/davegardnerisme/phonegeocode
 # github.com/gobuffalo/flect v0.2.2
 ## explicit
 github.com/gobuffalo/flect
@@ -17,6 +20,9 @@ github.com/googleapis/gax-go/v2
 # github.com/spf13/pflag v1.0.5
 ## explicit
 github.com/spf13/pflag
+# github.com/tchap/go-patricia v2.3.0+incompatible
+## explicit
+github.com/tchap/go-patricia/patricia
 # go.opencensus.io v0.22.5
 go.opencensus.io
 go.opencensus.io/internal

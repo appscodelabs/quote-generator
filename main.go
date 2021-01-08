@@ -29,6 +29,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davegardnerisme/phonegeocode"
 	"github.com/gobuffalo/flect"
 	flag "github.com/spf13/pflag"
 	"golang.org/x/net/context"
@@ -160,6 +161,21 @@ func main() {
 	} else {
 		replacements["{{website}}"] = Domain(email)
 	}
+
+	if v, ok := replacements["{{phone}}"]; ok {
+		replacements["{{tel}}"] = v
+	}
+	if v, ok := replacements["{{tel}}"]; ok {
+		tel := SanitizeTelNumber(v)
+		if !strings.HasPrefix(tel, "+") && len(tel) == 10 {
+			tel = "+1" + tel
+		}
+		replacements["{{tel}}"] = tel
+		if cc, err := phonegeocode.New().Country(tel); err == nil {
+			replacements["{{country}}"] = cc
+		}
+	}
+
 	now := time.Now()
 	replacements["{{prep-date}}"] = now.Format("Jan 2, 2006")
 	replacements["{{expiry-date}}"] = now.Add(30 * 24 * time.Hour).Format("Jan 2, 2006")
@@ -293,4 +309,14 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 		return err
 	}
 	return nil
+}
+
+func SanitizeTelNumber(tel string) string {
+	var buf bytes.Buffer
+	for _, r := range tel {
+		if r == '+' || (r >= '0' && r <= '9') {
+			buf.WriteRune(r)
+		}
+	}
+	return buf.String()
 }
