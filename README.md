@@ -5,9 +5,9 @@
 ```
 quote-generator \
   --template-doc-id=kubedb-45 \
-  --data=quote=AC2012001 \
   --data='name=***' \
   --data='email=***' \
+  --data='tel=***' \
   --data='company=***' \
   --data='designation=***'
 ```
