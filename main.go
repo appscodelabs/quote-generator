@@ -49,6 +49,7 @@ var templateIds = map[string]string{
 	"kubedb-30": "1n8zRoI5qjBaqa5hrogAey8OFd8-q7nCE9ysxwullb0g",
 	"kubedb-40": "1s5751cd1SWZAy824njvTz2-iSC4V7NXRoFoCmZfoIcQ",
 	"kubedb-45": "1VN3C_fDdUG_-zgFwvPkASVYzVmVr9E2Scv1Z2uqBRrY",
+	"kubedb-cluster-edu": "18niPAUxB0OzsWTSln2OYuMqlXvHidozquqVwhtaFKYg",
 }
 
 var (
