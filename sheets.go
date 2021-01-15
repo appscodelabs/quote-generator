@@ -28,6 +28,8 @@ import (
 	"google.golang.org/api/sheets/v4"
 )
 
+const SheetName = "Quotation Log"
+
 type Spreadsheet struct {
 	srv            *sheets.Service
 	SpreadSheetId  string
@@ -232,20 +234,16 @@ func (si *Spreadsheet) ensureHeader(headers []string) error {
 }
 
 func (si *Spreadsheet) Append(headers, data []string) (string, error) {
-	_, err := si.ensureSheet("Quotation Log", headers)
+	_, err := si.ensureSheet(SheetName, headers)
 	if err != nil {
 		return "", err
 	}
 
-	row, err := si.findEmptyCell()
+	lastQuote, err := si.findEmptyCell()
 	if err != nil {
 		return "", err
 	}
 
-	lastQuote, err := si.getCellData(row-1, 0)
-	if err != nil {
-		return "", err
-	}
 	var quote string
 	now := time.Now().UTC()
 	if strings.HasPrefix(lastQuote, "AC") {
@@ -275,21 +273,31 @@ func (si *Spreadsheet) Append(headers, data []string) (string, error) {
 	return quote, si.appendRowData(data, false)
 }
 
-func (si *Spreadsheet) findEmptyCell() (int64, error) {
+func (si *Spreadsheet) findEmptyCell() (string, error) {
 	resp, err := si.srv.Spreadsheets.GetByDataFilter(si.SpreadSheetId, &sheets.GetSpreadsheetByDataFilterRequest{
+		DataFilters: []*sheets.DataFilter{
+			{
+				A1Range:                 SheetName + "!A1:A",
+				DeveloperMetadataLookup: nil,
+				GridRange:               nil,
+				ForceSendFields:         nil,
+				NullFields:              nil,
+			},
+		},
 		IncludeGridData: true,
 	}).Do()
 	if err != nil {
-		return 0, fmt.Errorf("unable to retrieve data from sheet: %v", err)
+		return "", fmt.Errorf("unable to retrieve data from sheet: %v", err)
 	}
 
 	for _, s := range resp.Sheets {
 		if s.Properties.SheetId == si.CurrentSheetID {
-			return int64(len(s.Data[0].RowData)), nil
+			n := len(s.Data[0].RowData)
+			return s.Data[0].RowData[n-1].Values[0].FormattedValue, nil
 		}
 	}
 
-	return 0, errors.New("no empty cell found")
+	return "", errors.New("no empty cell found")
 }
 
 func (si *Spreadsheet) getCellData(row, column int64) (string, error) {

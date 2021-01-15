@@ -44,11 +44,11 @@ import (
 var businessFolderId = "1MW9ElMPDupVRohXqit-j6Wls-Cvq7DmN"
 
 var templateIds = map[string]string{
-	"stash-50":  "1EXMmcztXGb-EOrebHCrPrhFwQuRB0RpTl0UVeMtcMNk",
-	"stash-100": "1Y2z7UZIIuvF3Twka6tXoovkbxyxXXz4qLnr9W43BIFs",
-	"kubedb-30": "1n8zRoI5qjBaqa5hrogAey8OFd8-q7nCE9ysxwullb0g",
-	"kubedb-40": "1s5751cd1SWZAy824njvTz2-iSC4V7NXRoFoCmZfoIcQ",
-	"kubedb-45": "1VN3C_fDdUG_-zgFwvPkASVYzVmVr9E2Scv1Z2uqBRrY",
+	"stash-50":           "1EXMmcztXGb-EOrebHCrPrhFwQuRB0RpTl0UVeMtcMNk",
+	"stash-100":          "1Y2z7UZIIuvF3Twka6tXoovkbxyxXXz4qLnr9W43BIFs",
+	"kubedb-30":          "1n8zRoI5qjBaqa5hrogAey8OFd8-q7nCE9ysxwullb0g",
+	"kubedb-40":          "1s5751cd1SWZAy824njvTz2-iSC4V7NXRoFoCmZfoIcQ",
+	"kubedb-45":          "1VN3C_fDdUG_-zgFwvPkASVYzVmVr9E2Scv1Z2uqBRrY",
 	"kubedb-cluster-edu": "18niPAUxB0OzsWTSln2OYuMqlXvHidozquqVwhtaFKYg",
 }
 
@@ -136,6 +136,7 @@ func main() {
 	if templateDocId == "" {
 		panic("missing template doc id")
 	}
+	templateDoc := templateDocId
 	if id, ok := templateIds[templateDocId]; ok {
 		templateDocId = id
 	}
@@ -236,7 +237,7 @@ func main() {
 		replacements["{{company}}"],
 		replacements["{{website}}"],
 		replacements["{{country}}"],
-		templateDocId,
+		templateDoc,
 		replacements["{{prep-date}}"],
 		replacements["{{expiry-date}}"],
 	})
