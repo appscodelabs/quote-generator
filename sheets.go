@@ -299,22 +299,3 @@ func (si *Spreadsheet) findEmptyCell() (string, error) {
 
 	return "", errors.New("no empty cell found")
 }
-
-func (si *Spreadsheet) getCellData(row, column int64) (string, error) {
-	resp, err := si.srv.Spreadsheets.GetByDataFilter(si.SpreadSheetId, &sheets.GetSpreadsheetByDataFilterRequest{
-		IncludeGridData: true,
-	}).Do()
-	if err != nil {
-		return "", fmt.Errorf("unable to retrieve data from sheet: %v", err)
-	}
-
-	var val string
-
-	for _, s := range resp.Sheets {
-		if s.Properties.SheetId == si.CurrentSheetID {
-			val = s.Data[0].RowData[row].Values[column].FormattedValue
-		}
-	}
-
-	return val, nil
-}

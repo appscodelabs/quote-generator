@@ -44,6 +44,7 @@ import (
 var businessFolderId = "1MW9ElMPDupVRohXqit-j6Wls-Cvq7DmN"
 
 var templateIds = map[string]string{
+	"stash-on-demand":    "1zvnJ6PNWqesnh9-33kF47k2jN2WSPwxrlPPRojSO1Y0",
 	"stash-50":           "1EXMmcztXGb-EOrebHCrPrhFwQuRB0RpTl0UVeMtcMNk",
 	"stash-100":          "1Y2z7UZIIuvF3Twka6tXoovkbxyxXXz4qLnr9W43BIFs",
 	"kubedb-30":          "1n8zRoI5qjBaqa5hrogAey8OFd8-q7nCE9ysxwullb0g",
