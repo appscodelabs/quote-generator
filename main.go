@@ -18,12 +18,10 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,9 +31,8 @@ import (
 	"github.com/gobuffalo/flect"
 	flag "github.com/spf13/pflag"
 	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	. "gomodules.xyz/email-providers"
+	gdrive "gomodules.xyz/gdrive-utils"
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
@@ -57,14 +54,14 @@ var templateIds = map[string]string{
 }
 
 var (
-	parentFolderId     string
-	templateDocId      string
-	outDir             string
-	replacementInput   map[string]string
-	replacements       map[string]string
-	email              string
-	quote              string
-	quoteSpreadsheetId = "1evwv2ON94R38M-Lkrw8b6dpVSkRYHUWsNOuI7X0_-zA"
+	parentFolderId       string
+	templateDocId        string
+	outDir               string
+	replacementInput     map[string]string
+	replacements         map[string]string
+	email                string
+	quote                string
+	LicenseSpreadsheetId = "1evwv2ON94R38M-Lkrw8b6dpVSkRYHUWsNOuI7X0_-zA"
 )
 
 func init() {
@@ -72,63 +69,7 @@ func init() {
 	flag.StringVar(&templateDocId, "template-doc-id", "", "Template document id")
 	flag.StringVar(&outDir, "out-dir", filepath.Join("/personal", "AppsCode", "quotes"), "Path to directory where output files are stored")
 	flag.StringToStringVar(&replacementInput, "data", nil, "key-value pairs for text replacement")
-	flag.StringVar(&quoteSpreadsheetId, "spreadsheet-id", quoteSpreadsheetId, "Google Spreadsheet Id used to store quotation log")
-}
-
-// Retrieves a token, saves the token, then returns the generated client.
-func getClient(config *oauth2.Config) *http.Client {
-	tokFile := "token.json"
-	tok, err := tokenFromFile(tokFile)
-	if err != nil {
-		tok = getTokenFromWeb(config)
-		saveToken(tokFile, tok)
-	}
-	return config.Client(context.Background(), tok)
-}
-
-// Requests a token from the web, then returns the retrieved token.
-func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
-	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-	fmt.Printf("Go to the following link in your browser then type the "+
-		"authorization code: \n%v\n", authURL)
-
-	var authCode string
-	if _, err := fmt.Scan(&authCode); err != nil {
-		log.Fatalf("Unable to read authorization code: %v", err)
-	}
-
-	tok, err := config.Exchange(context.TODO(), authCode)
-	if err != nil {
-		log.Fatalf("Unable to retrieve token from web: %v", err)
-	}
-	return tok
-}
-
-// Retrieves a token from a local file.
-func tokenFromFile(file string) (*oauth2.Token, error) {
-	f, err := os.Open(file)
-	defer func() {
-		Must(f.Close())
-	}()
-	if err != nil {
-		return nil, err
-	}
-	tok := &oauth2.Token{}
-	err = json.NewDecoder(f).Decode(tok)
-	return tok, err
-}
-
-// Saves a token to a file path.
-func saveToken(path string, token *oauth2.Token) {
-	fmt.Printf("Saving credential file to: %s\n", path)
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	defer func() {
-		Must(f.Close())
-	}()
-	if err != nil {
-		log.Fatalf("Unable to cache OAuth token: %v", err)
-	}
-	Must(json.NewEncoder(f).Encode(token))
+	flag.StringVar(&LicenseSpreadsheetId, "spreadsheet-id", LicenseSpreadsheetId, "Google Spreadsheet Id used to store quotation log")
 }
 
 func main() {
@@ -184,27 +125,14 @@ func main() {
 	replacements["{{prep-date}}"] = now.Format("Jan 2, 2006")
 	replacements["{{expiry-date}}"] = now.Add(30 * 24 * time.Hour).Format("Jan 2, 2006")
 
-	b, err := ioutil.ReadFile("credentials.json")
+	dir, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
+		log.Fatal(err)
 	}
-
-	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b,
-		"https://www.googleapis.com/auth/documents",
-		"https://www.googleapis.com/auth/documents.readonly",
-		"https://www.googleapis.com/auth/drive",
-		"https://www.googleapis.com/auth/drive.file",
-		"https://www.googleapis.com/auth/drive.metadata",
-		"https://www.googleapis.com/auth/drive.metadata.readonly",
-		"https://www.googleapis.com/auth/drive.readonly",
-		"https://www.googleapis.com/auth/spreadsheets",
-		"https://www.googleapis.com/auth/spreadsheets.readonly",
-	)
+	client, err := gdrive.DefaultClient(dir)
 	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
+		log.Fatal(err)
 	}
-	client := getClient(config)
 
 	srvDrive, err := drive.NewService(context.TODO(), option.WithHTTPClient(client))
 	if err != nil {
@@ -216,11 +144,11 @@ func main() {
 		log.Fatalf("Unable to retrieve Docs client: %v", err)
 	}
 
-	srvSheet, err := NewSpreadsheet(quoteSpreadsheetId, option.WithHTTPClient(client))
+	srvSheet, err := gdrive.NewSpreadsheet(LicenseSpreadsheetId, option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Sheets client: %v", err)
 	}
-	quote, err = srvSheet.Append([]string{
+	quote, err = LogQuotation(srvSheet, []string{
 		"Quotation #",
 		"Name",
 		"Designation",
