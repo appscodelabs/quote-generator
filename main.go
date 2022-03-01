@@ -267,12 +267,12 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 		return err
 	}
 	filename := filepath.Join(outDir, FolderName(email), docName+".pdf")
-	err = os.MkdirAll(filepath.Dir(filename), 0755)
+	err = os.MkdirAll(filepath.Dir(filename), 0o755)
 	if err != nil {
 		return err
 	}
 	fmt.Println("writing file:", filename)
-	err = ioutil.WriteFile(filename, buf.Bytes(), 0644)
+	err = ioutil.WriteFile(filename, buf.Bytes(), 0o644)
 	if err != nil {
 		return err
 	}
