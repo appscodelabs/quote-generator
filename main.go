@@ -192,12 +192,6 @@ func FolderName(email string) string {
 	return parts[len(parts)-1]
 }
 
-func Must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 	var domainFolderId string
 
