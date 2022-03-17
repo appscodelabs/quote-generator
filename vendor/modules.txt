@@ -1,6 +1,8 @@
 # cloud.google.com/go v0.74.0
 ## explicit; go 1.11
 cloud.google.com/go/compute/metadata
+# github.com/davecgh/go-spew v1.1.1
+## explicit
 # github.com/davegardnerisme/phonegeocode v0.0.0-20160120101024-a49b977f8889
 ## explicit
 github.com/davegardnerisme/phonegeocode
