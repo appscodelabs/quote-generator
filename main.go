@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -266,7 +265,7 @@ func run(srvDoc *docs.Service, srvDrive *drive.Service) error {
 		return err
 	}
 	fmt.Println("writing file:", filename)
-	err = ioutil.WriteFile(filename, buf.Bytes(), 0o644)
+	err = os.WriteFile(filename, buf.Bytes(), 0o644)
 	if err != nil {
 		return err
 	}
