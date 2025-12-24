@@ -1,6 +1,6 @@
 module github.com/appscodelabs/quote-generator
 
-go 1.18
+go 1.23.0
 
 require (
 	github.com/davegardnerisme/phonegeocode v0.0.0-20160120101024-a49b977f8889
@@ -19,7 +19,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
 	github.com/tchap/go-patricia v2.3.0+incompatible // indirect
 	go.opencensus.io v0.22.5 // indirect
-	golang.org/x/oauth2 v0.1.0 // indirect
+	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
