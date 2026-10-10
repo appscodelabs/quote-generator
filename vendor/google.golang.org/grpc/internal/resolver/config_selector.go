@@ -29,8 +29,10 @@ import (
 
 // ConfigSelector controls what configuration to use for every RPC.
 type ConfigSelector interface {
-	// Selects the configuration for the RPC.
-	SelectConfig(RPCInfo) *RPCConfig
+	// Selects the configuration for the RPC, or terminates it using the error.
+	// This error will be converted by the gRPC library to a status error with
+	// code UNKNOWN if it is not returned as a status error.
+	SelectConfig(RPCInfo) (*RPCConfig, error)
 }
 
 // RPCInfo contains RPC information needed by a ConfigSelector.
@@ -49,6 +51,18 @@ type RPCConfig struct {
 	Context      context.Context
 	MethodConfig serviceconfig.MethodConfig // configuration to use for this RPC
 	OnCommitted  func()                     // Called when the RPC has been committed (retries no longer possible)
+	Interceptor  any
+}
+
+// ServerInterceptor is an interceptor for incoming RPC's on gRPC server side.
+type ServerInterceptor interface {
+	// AllowRPC checks if an incoming RPC is allowed to proceed based on
+	// information about connection RPC was received on, and HTTP Headers. This
+	// information will be piped into context.
+	AllowRPC(ctx context.Context) error // TODO: Make this a real interceptor for filters such as rate limiting.
+	// Close closes the interceptor. Once called, no new calls to NewStream are
+	// accepted. Ongoing calls to NewStream are allowed to complete.
+	Close()
 }
 
 type csKeyType string
@@ -58,7 +72,7 @@ const csKey = csKeyType("grpc.internal.resolver.configSelector")
 // SetConfigSelector sets the config selector in state and returns the new
 // state.
 func SetConfigSelector(state resolver.State, cs ConfigSelector) resolver.State {
-	state.Attributes = state.Attributes.WithValues(csKey, cs)
+	state.Attributes = state.Attributes.WithValue(csKey, cs)
 	return state
 }
 
@@ -86,7 +100,7 @@ func (scs *SafeConfigSelector) UpdateConfigSelector(cs ConfigSelector) {
 }
 
 // SelectConfig defers to the current ConfigSelector in scs.
-func (scs *SafeConfigSelector) SelectConfig(r RPCInfo) *RPCConfig {
+func (scs *SafeConfigSelector) SelectConfig(r RPCInfo) (*RPCConfig, error) {
 	scs.mu.RLock()
 	defer scs.mu.RUnlock()
 	return scs.cs.SelectConfig(r)
